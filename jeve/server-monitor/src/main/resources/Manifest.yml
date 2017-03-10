@@ -1,0 +1,10 @@
+---
+applications:
+- name: server-monitor
+  memory: 1024M
+  health-check-type: port
+  stack: cflinuxfs2
+  services:
+  - jeve-eureka
+  buildpack: java_buildpack_oracle_jre8_tomcat8
+  domain: szga.pengyun.gov.cn

@@ -1,0 +1,18 @@
+management:
+  security:
+    enabled: false
+
+spring:
+  application:
+    name: service-demo1
+  profiles: cloud
+  
+eureka:
+  instance:
+    nonSecurePort: 80
+    hostname: ${vcap.application.uris[0]}
+    status-page-url: ${management.context-path}/info
+    health-check-url: ${management.context-path}/health
+  client:
+    service-url:
+      defaultZone: ${vcap.services.jeve-eureka.credentials.url}

@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: jeve-monitor
+  profiles:
+    active: test
+    
+#默认不需要进行安全认证
+management:
+  security:
+    enabled: false
+    
+---
+spring:
+  profiles: test
+    
+server:
+  port: 18081
+    
+eureka:
+  client:
+    service-url:
+      defaultZone: http://127.0.0.1:8762/eureka/
+---
+spring:
+  profiles: cloud
+ 
+eureka:
+  instance:
+    nonSecurePort: 80
+    hostname: ${vcap.application.uris[0]}
+  client:
+    service-url:
+      defaultZone: ${vcap.services.jeve-eureka.credentials.url}

@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: jeve-eureka
+  profiles:
+    active: test
+
+---
+spring:
+  profiles: test   
+server:
+  port: 8762
+
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+    service-url:
+      defaultZone: http://localhost:${server.port}/eureka/
+
+---   
+spring:
+  profiles: cloud
+ 
+eureka:
+  instance:
+    nonSecurePort: 80
+    hostname: ${vcap.application.uris[0]}
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+    service-url:
+      defaultZone: ${vcap.services.jeve-eureka.credentials.url}
+      
