@@ -1,0 +1,137 @@
+name: bosh
+
+releases:
+- name: bosh
+  # url: https://bosh.io/d/github.com/cloudfoundry/bosh?v=245
+  # url: file:///home/feng/workspace/my-bosh/bosh-251.tgz
+  # sha1: 649fca64ac878476c6d68fc5e7ff86c2d879be16
+  url: file:///home/bosh/cf/my-bosh/bosh-255.12.tgz
+  sha1: b4c2f9ac37686ddfa16e2ae8cb95b149697ccd0d
+- name: bosh-vsphere-cpi
+  # url: https://bosh.io/d/github.com/cloudfoundry-incubator/bosh-vsphere-cpi-release?v=14
+  # url: file:///home/feng/my-bosh/bosh-vsphere-cpi-release-14.tgz
+  # sha1: f2bd2e21542cd147d360e89d064a728a89c3790f
+  url: file:///home/bosh/cf/my-bosh/bosh-vsphere-cpi-release-26.tgz
+  sha1: d67b9814d417fdb82092782963142418bf2ebd80
+
+
+resource_pools:
+- name: vms
+  network: private
+  stemcell:
+    # url: https://bosh.io/d/stemcells/bosh-vsphere-esxi-ubuntu-trusty-go_agent?v=2950
+    # url: file:///home/feng/workspace/my-bosh/bosh-stemcell-3184.1-vsphere-esxi-ubuntu-trusty-go_agent.tgz
+    # sha1: b05fc611eb225ce72f09d573f807ded2
+    url: file:///home/bosh/cf/my-bosh/bosh-stemcell-3232.19-vsphere-esxi-ubuntu-trusty-go_agent.tgz
+  # sha1: 68bccb300466a3affac37053559af9cbe1a0d286
+
+  cloud_properties:
+    cpu: 4
+    ram: 8_192
+    disk: 30_000
+  env:
+    bosh:
+      # c1oudc0w is a default password for vcap user
+      password: "$6$4gDD3aV0rdqlrKC$2axHCxGKIObs6tAmMTqYCspcdvQXh3JJcvWOY2WGb4SrdXtnCyNaWlrf3WEqvYR2MYizEGp3kMmbpwBC6jsHt0"
+
+disk_pools:
+- name: disks
+  disk_size: 30_000
+
+networks:
+- name: private
+  type: manual
+  subnets:
+  - range: 192.168.5.0/24
+    gateway: 192.168.5.254
+    dns: [192.168.1.1]
+    cloud_properties: {name: PaaSNet_1005} # <--- Replace with Network name
+
+jobs:
+- name: bosh
+  instances: 1
+
+  templates:
+  - {name: nats, release: bosh}
+  - {name: redis, release: bosh}
+  - {name: postgres, release: bosh}
+  - {name: blobstore, release: bosh}
+  - {name: director, release: bosh}
+  - {name: health_monitor, release: bosh}
+  - {name: vsphere_cpi, release: bosh-vsphere-cpi}
+
+  resource_pool: vms
+  persistent_disk_pool: disks
+
+  networks:
+  - {name: private, static_ips: [192.168.5.6]}
+
+  properties:
+    nats:
+      address: 127.0.0.1
+      user: nats
+      password: nats-password
+
+    redis:
+      listen_address: 127.0.0.1
+      address: 127.0.0.1
+      password: redis-password
+
+    postgres: &db
+      listen_address: 127.0.0.1
+      host: 127.0.0.1
+      user: postgres
+      password: postgres-password
+      database: bosh
+      adapter: postgres
+
+    blobstore:
+      address: 192.168.5.6
+      port: 25250
+      provider: dav
+      director: {user: director, password: director-password}
+      agent: {user: agent, password: agent-password}
+
+    director:
+      address: 127.0.0.1
+      name: my-bosh
+      db: *db
+      cpi_job: vsphere_cpi
+      user_management:
+        provider: local
+        local:
+          users:
+          - {name: admin, password: admin}
+          - {name: hm, password: hm-password}
+
+    hm:
+      director_account: {user: hm, password: hm-password}
+      resurrector_enabled: true
+
+    vcenter: &vcenter # <--- Replace values below
+      address: 10.104.0.250
+      user: administrator@cloudvirtual.local
+      password: Nsccsz;123
+      datacenters:
+      - name: DataCenter
+        vm_folder: cf_vms_open
+        template_folder: cf_templates_open
+        datastore_pattern: PaaS_32T_LUN_1
+        persistent_datastore_pattern: PaaS_32T_LUN_2
+        disk_path: boshdeployer_bosh_open
+        clusters: [OpenPaaSCluster1]
+
+    agent: {mbus: "nats://nats:nats-password@192.168.5.6:4222"}
+
+    ntp: &ntp [192.168.1.1]
+
+cloud_provider:
+  template: {name: vsphere_cpi, release: bosh-vsphere-cpi}
+
+  mbus: "https://mbus:mbus-password@192.168.5.6:6868"
+
+  properties:
+    vcenter: *vcenter
+    agent: {mbus: "https://mbus:mbus-password@0.0.0.0:6868"}
+    blobstore: {provider: local, path: /var/vcap/micro_bosh/data/cache}
+    ntp: *ntp
