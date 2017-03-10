@@ -1,18 +1,20 @@
 spring:
   application:
     name: server-config
-
-
   cloud:
     config:
       server:
         git:
-          uri: http://github.com/evenwanga/Jeve/
+          uri: https://github.com/evenwanga/Jeve/
           search-paths:
           - jeve/server-config-repo
           username: 514094893@qq.com
           password: wyw1989
           
-
 server:
   port: 7777
+  
+eureka:
+  client:
+    service-url:
+      defaultZone: http://127.0.0.1:8762/eureka/
