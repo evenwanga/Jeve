@@ -8,6 +8,11 @@ spring:
       server:
         git:
           uri: http://github.com/evenwanga/Jeve/
----
+          search-paths:
+          - jeve/server-config-repo
+          username: 514094893@qq.com
+          password: wyw1989
+          
+
 server:
   port: 7777
